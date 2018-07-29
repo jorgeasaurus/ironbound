@@ -13,8 +13,10 @@ mongo = PyMongo(app)
 
 @app.route('/')
 def index():
+    users = mongo.db.users
+    user = users.find_one({'name': str(session['username'])})
     if 'username' in session:
-        return 'You are logged in as ' + session['username']
+        return 'You are logged in as ' + session['username'] + '\n' + user['squat']
 
     return render_template('index.html')
 
@@ -24,7 +26,7 @@ def login():
     login_user = users.find_one({'name' : request.form['username']})
 
     if login_user:
-        if bcrypt.hashpw(request.form['pass'].encode('utf-8'), login_user['password'].encode('utf-8')) == login_user['password'].encode('utf-8'):
+        if bcrypt.hashpw(request.form['pass'].encode('utf-8'), login_user['password']) == login_user['password']:
             session['username'] = request.form['username']
             return redirect(url_for('index'))
 
@@ -45,6 +47,13 @@ def register():
         return 'That username already exists!'
 
     return render_template('register.html')
+
+@app.route('/logout')
+def logout():
+    if 'username' in session:
+        session.pop('username', None)
+        return 'You are now logged out'
+
 
 if __name__ == '__main__':
     app.secret_key = 'mysecret'
