@@ -1,8 +1,13 @@
 from flask import Flask, render_template, url_for, request, session, redirect
-from flask.ext.pymongo import PyMongo
+from flask_pymongo import PyMongo
+from flask_admin import Admin
+from flask_admin.contrib.pymongo import ModelView
+from flask_admin import BaseView, expose
 import bcrypt
 
 app = Flask(__name__)
+
+admin = Admin(app, name='IronBound', template_mode='bootstrap3')
 
 app.config['MONGO_DBNAME'] = 'lifter_db'
 app.config['MONGO_URI'] = 'mongodb://admin:admin1234@ds155461.mlab.com:55461/lifter_db'
@@ -11,11 +16,12 @@ app.config['MONGO_URI'] = 'mongodb://admin:admin1234@ds155461.mlab.com:55461/lif
 
 mongo = PyMongo(app)
 
+
 @app.route('/')
 def index():
     users = mongo.db.users
-    user = users.find_one({'name': str(session['username'])})
     if 'username' in session:
+        user = users.find_one({'name': str(session['username'])})
         return 'You are logged in as ' + session['username'] + '\n' + user['squat']
 
     return render_template('index.html')
@@ -52,8 +58,14 @@ def register():
 def logout():
     if 'username' in session:
         session.pop('username', None)
-        return 'You are now logged out'
+        return redirect(url_for('index'))
 
+class TestView(BaseView):
+    @expose('/')
+    def index(self):
+        return self.render('admin/test.html')
+
+admin.add_view(TestView(name='Test12'))
 
 if __name__ == '__main__':
     app.secret_key = 'mysecret'
